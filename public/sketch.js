@@ -1,12 +1,21 @@
+const socket = io("ws://localhost:3000");
+
+socket.on("connect", () => {
+  // either with send()
+  socket.send("Hello!");
+});
+
 let video;
 let poseNet;
 let poses = [];
-
-// todo: send the pitch and sounds via socket io
-// add visual aesthetics ?
+let drumLine = 0;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
+  drumLine = windowHeight / 2;
+  previousLeftValue = windowHeight;
+  previousRightValue = windowHeight;
+
   video = createCapture(VIDEO);
   video.size(width, height);
 
@@ -25,10 +34,27 @@ function draw() {
   // image(video, 0, 0, width, height);
   background("#f2faf4");
   drawShape();
+
+  push();
+  noStroke();
+  fill("#15ff00");
+  rect(0, drumLine, width, 10);
+  pop();
+}
+
+function mousePressed() {
+  drumLine = mouseY;
 }
 
 const vertexLabels = ["rightWrist", "leftWrist", "leftKnee", "rightKnee"];
 let vertices = {};
+
+function getDistance(point1, point2){
+  let y = point2.x - point1.x;
+  let x = point2.y - point2.y;
+  
+  return Math.sqrt(x * x + y * y);
+}
 
 function definePitch() {
   const middleBottomGround = {
@@ -41,7 +67,7 @@ function definePitch() {
     y: (vertices.rightWrist.y + vertices.leftWrist.y)/2
   };
 
-  return middleTopGround - middleBottomGround;
+  return getDistance(middleTopGround, middleBottomGround);
 }
 
 function defineNote() {
@@ -55,8 +81,11 @@ function defineNote() {
     y: (vertices.rightWrist.y + vertices.rightKnee.y)/2
   };
 
-  return middleRightSide - middleLeftSide;
+  return getDistance(middleRightSide, middleLeftSide);
 }
+
+let previousLeftValue;
+let previousRightValue;
 
 function drawShape()  {
   for (let i = 0; i < poses.length; i++) {
@@ -73,7 +102,22 @@ function drawShape()  {
     }
 
     // draw the shape
-    fill("#241c94");
+    if (vertices.rightKnee.y < drumLine && previousRightValue > drumLine) {
+      fill("#15ff00");
+      socket.emit("playDrum1");
+    } else if (vertices.leftKnee.y < drumLine && previousLeftValue > drumLine) {
+      fill("#15ff00");
+      socket.emit("playDrum2");
+    } else {
+      let pitch = definePitch();
+      let note = defineNote();
+      fill("#241c94");
+      socket.emit("makeSound", {pitch: pitch, note: note});
+    }
+
+    previousRightValue = vertices.rightKnee.y;
+    previousLeftValue = vertices.leftKnee.y;
+
     beginShape();
     for(let i = 0; i < vertexLabels.length; i++) {
       vertex(vertices[vertexLabels[i]].x, vertices[vertexLabels[i]].y);
