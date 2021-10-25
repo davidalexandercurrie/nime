@@ -17,10 +17,10 @@ io.on('connection', socket => {
   });
 
   socket.on('playDrum1', () => {
-    maxApi.outlet('Drum1');
+    maxApi.outlet({ drum1: 1 });
   });
 
   socket.on('playDrum2', () => {
-    maxApi.outlet('Drum2');
+    maxApi.outlet({ drum2: 1 });
   });
 });
