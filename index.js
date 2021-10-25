@@ -13,17 +13,14 @@ io.on('connection', socket => {
   console.log(socket.id + ' has connected.');
 
   socket.on('makeSound', data => {
-    console.log(data);
-    maxApi.post(data);
+    maxApi.outlet(data);
   });
 
   socket.on('playDrum1', () => {
-    console.log('Drum!');
-    maxApi.post('Drum1');
+    maxApi.outlet('Drum1');
   });
 
   socket.on('playDrum2', () => {
-    console.log('Drum!');
-    maxApi.post('Drum2');
+    maxApi.outlet('Drum2');
   });
 });
